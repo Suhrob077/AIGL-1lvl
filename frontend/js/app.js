@@ -58,7 +58,10 @@ function populateLangSelectors() {
   document.getElementById('scanTargetLang').value = Store.settings.targetLang;
   document.getElementById('apiBaseUrlInput').value = Store.settings.apiBaseUrl;
   document.getElementById('addArticlesToggle').checked = Store.settings.addArticles !== false;
-  document.getElementById('dailyGoalInput').value = Store.settings.dailyGoal || 100;
+  const aiglToggle = document.getElementById('aiglToggle');
+  if (aiglToggle) aiglToggle.checked = !!Store.settings.aiglEnabled;
+  const aiglPanel = document.getElementById('aiglPanel');
+  if (aiglPanel) aiglPanel.style.display = Store.settings.aiglEnabled ? 'block' : 'none';
   updateDirectionLabels();
 }
 
@@ -66,8 +69,6 @@ function saveSettings() {
   Store.settings.sourceLang = document.getElementById('settingsSourceLang').value;
   Store.settings.targetLang = document.getElementById('settingsTargetLang').value;
   Store.settings.apiBaseUrl = document.getElementById('apiBaseUrlInput').value.trim().replace(/\/$/, '');
-  const goalInput = document.getElementById('dailyGoalInput');
-  Store.settings.dailyGoal = Math.max(10, Number(goalInput.value) || 100);
   Store.saveSettings();
   updateDirectionLabels();
   if (typeof renderDailyGoalWidgets === 'function') renderDailyGoalWidgets();
@@ -85,6 +86,14 @@ function toggleAddArticles(enabled) {
   Store.settings.addArticles = enabled;
   Store.saveSettings();
   showToast(enabled ? "Artikllarni avtomatik qo'shish yoqildi 🇩🇪" : "Artikllarni avtomatik qo'shish o'chirildi");
+}
+
+function toggleAigl(enabled) {
+  Store.settings.aiglEnabled = enabled;
+  Store.saveSettings();
+  const panel = document.getElementById('aiglPanel');
+  if (panel) panel.style.display = enabled ? 'block' : 'none';
+  showToast(enabled ? "AI-GL yoqildi 🤖" : "AI-GL o'chirildi");
 }
 
 function updateDirectionLabels() {

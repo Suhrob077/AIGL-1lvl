@@ -5,14 +5,38 @@
 
 let chatHistory = []; // { role: 'user'|'ai', text }[]
 let chatSending = false;
+let chatMode = 'general'; // 'general' (word/grammar tutor) | 'aigl' (points & learning advisor)
 
-function openChatDrawer(prefill) {
+function openChatDrawer(prefill, mode) {
+  chatMode = mode || 'general';
+  const titleEl = document.getElementById('chatDrawerTitle');
+  if (titleEl) titleEl.textContent = chatMode === 'aigl' ? '🤖 AI-GL — Ballar va maslahat' : '💬 AI bilan suhbat';
   document.getElementById('chatDrawerBackdrop').classList.add('active');
   document.getElementById('chatDrawer').classList.add('active');
   if (prefill && !chatHistory.length) {
     document.getElementById('chatInput').value = prefill;
   }
   setTimeout(() => document.getElementById('chatInput').focus(), 150);
+}
+
+/** Settings > AI-GL entry point: opens the chat drawer scoped to points,
+ *  progress and learning-strategy advice, with today's/weekly stats sent
+ *  as context (never persisted — same session-only rule as the rest of chat). */
+function openAiglChat() {
+  chatHistory = [];
+  const today = (typeof getTodayProgress === 'function') ? getTodayProgress() : { points: 0, goal: 100 };
+  const weekDays = (typeof buildWeekData === 'function') ? buildWeekData(new Date()) : [];
+  const weekTotal = weekDays.reduce((sum, d) => sum + (d.points || 0), 0);
+  const metDays = weekDays.filter(d => d.status === 'met' || d.status === 'over').length;
+
+  chatHistory.push({
+    role: 'ai',
+    text: `Salom! Men AI-GL — ballaringiz va o'rganish jarayoningiz bo'yicha yordamchiman. Bugun ${today.points}/${today.goal} ball to'pladingiz, shu hafta ${metDays}/7 kun normani bajardingiz (jami ${weekTotal} ball). Nima haqida gaplashamiz?`,
+  });
+
+  window._aiglStats = { todayPoints: today.points, todayGoal: today.goal, weekTotal, metDays };
+  openChatDrawer(null, 'aigl');
+  renderChatMessages();
 }
 
 function closeChatDrawer() {
@@ -48,6 +72,8 @@ async function sendChatMessage() {
       body: JSON.stringify({
         message: text,
         history: chatHistory.slice(0, -1).slice(-8), // small rolling window, never persisted
+        mode: chatMode,
+        stats: chatMode === 'aigl' ? window._aiglStats : undefined,
       }),
     });
     const data = await res.json();

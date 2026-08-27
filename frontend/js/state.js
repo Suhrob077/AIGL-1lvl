@@ -52,8 +52,9 @@ const Store = {
   words: [],
   settings: {
     sourceLang: 'de', targetLang: 'uz', apiBaseUrl: defaultApiBaseUrl(), addArticles: true,
-    dailyGoal: 100,          // "kunlik yig'ish bali" — configurable in Settings
+    dailyGoal: 100,          // "kunlik yig'ish bali" — base daily point goal
     notificationsEnabled: false,
+    aiglEnabled: false,      // AI-GL toggle: enables the points/learning AI chat entry point
   },
   yangiman: false,
 

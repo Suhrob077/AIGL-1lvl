@@ -79,6 +79,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 .nav-btn .icon { font-size: 1.25rem; }
 .nav-btn.active { opacity: 1; color: #00d2ff; }
 
+.aigl-panel { border-top: 1px solid rgba(255,255,255,0.08); margin-top: 12px; padding-top: 2px; }
+
 /* Toggle switch (Yangiman) */
 .toggle-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; }
 .toggle-row .label { font-size: 0.92rem; }
@@ -539,3 +541,93 @@ table.mini .attempt-pill { display:inline-block; min-width: 22px; text-align:cen
 .month-day.status-over { background: linear-gradient(135deg, #00d2ff, #3a7bd5); color: #fff; }
 .month-day.status-under { background: linear-gradient(135deg, #ff9a3d, #ff5e62); color: #2a1400; }
 .month-day.status-empty { opacity: 0.4; }
+
+/* =========================================================
+   DESKTOP / PC LAYOUT
+   Mobile design above stays untouched below this breakpoint.
+   On wider screens: a left icon sidebar replaces the bottom
+   tab bar, the page uses a comfortable (not edge-to-edge, not
+   narrow-column) width, and the list-heavy screens (home,
+   settings, dashboard) lay their cards out in two columns so
+   everything fits on one screen with as little scrolling as
+   possible.
+   ========================================================= */
+@media (min-width: 901px) {
+
+  body { overflow-x: hidden; }
+
+  .container {
+    max-width: none;
+    width: min(1300px, 94vw);
+    margin: 0 auto;
+    padding: 22px 30px 30px 118px; /* left gap reserves room for the sidebar */
+    min-height: 100vh;
+  }
+
+  /* Bottom tab bar -> left sidebar */
+  .bottom-nav {
+    top: 0; bottom: 0; left: 0; right: auto;
+    width: 92px; height: 100vh;
+    flex-direction: column; justify-content: flex-start;
+    gap: 8px; padding: 26px 10px;
+    border-top: none; border-right: 1px solid rgba(255,255,255,0.08);
+    background: rgba(15,12,41,0.92);
+  }
+  .nav-btn { flex: none; width: 100%; padding: 14px 4px; font-size: 0.64rem; border-radius: 12px; }
+  .nav-btn .icon { font-size: 1.55rem; }
+  .nav-btn.active { background: rgba(0,210,255,0.1); }
+
+  header { text-align: left; padding: 4px 0 16px; }
+  header h1 { font-size: 1.55rem; }
+  header p { opacity: 0.55; }
+
+  .card { margin-bottom: 0; padding: 15px 18px; }
+
+  /* Two-column grid for the card-list-heavy screens */
+  #home-screen.screen.active,
+  #settings-screen.screen.active,
+  #dashboard-screen.screen.active {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-content: start;
+    align-items: start;
+  }
+  #home-screen.screen.active > header,
+  #settings-screen.screen.active > header,
+  #dashboard-screen.screen.active > header,
+  .span-2 {
+    grid-column: 1 / -1;
+  }
+
+  /* Single-flow interactive screens: keep them centered and readable
+     instead of stretching inputs/cards across the whole wide container */
+  #practice-screen.screen.active,
+  #scan-screen.screen.active,
+  #game-screen.screen.active {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+  #practice-screen.screen.active .card,
+  #scan-screen.screen.active .card,
+  #game-screen.screen.active .card {
+    margin-bottom: 14px;
+  }
+
+  .word-list { max-height: 240px; }
+
+  /* Chat drawer: proportionally narrower on a big screen */
+  .chat-drawer { width: min(380px, 30vw); }
+
+  /* Settings: pair the "til" swap row a bit tighter, and let the
+     AI-GL / toggles cards sit naturally next to each other */
+  .toggle-row { padding: 5px 0; }
+}
+
+@media (min-width: 901px) and (min-height: 760px) {
+  /* On typical laptop/desktop viewport heights, tighten vertical rhythm
+     a touch more so Home/Settings/Dashboard fit in one screen. */
+  .container { padding-top: 16px; }
+  header { padding-bottom: 12px; }
+  .card h2 { margin-bottom: 9px; }
+}

@@ -502,4 +502,3 @@ Open the printed URL. Camera/microphone access requires `https://` or
   prompt constrains it to dictionary-style entries and asks it to abstain
   (empty result) rather than guess when the image doesn't match the selected
   source language.
-# AIGL-1lvl

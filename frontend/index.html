@@ -19,9 +19,9 @@
         <p>AI asosidagi lug'at o'rganish ilovasi</p>
       </header>
 
-      <div class="daily-goal-banner" id="dailyGoalBanner" style="display:none;" onclick="dismissDailyGoalBanner()"></div>
+      <div class="daily-goal-banner span-2" id="dailyGoalBanner" style="display:none;" onclick="dismissDailyGoalBanner()"></div>
 
-      <div class="card daily-goal-card">
+      <div class="card daily-goal-card span-2">
         <h2>🎯 Kunlik maqsad</h2>
         <div class="daily-goal-row">
           <span><span class="daily-goal-points">0</span> / <span class="daily-goal-target">100</span> ball</span>
@@ -49,7 +49,7 @@
         <button class="btn-danger btn-full" onclick="clearAll()">🗑️ Hammasini o'chirish</button>
       </div>
 
-      <div class="card">
+      <div class="card span-2">
         <h2>Yo'nalishni tanlang</h2>
         <div class="direction-btns">
           <button id="dir-fwd" class="btn-secondary active" onclick="setDirection('src-tgt')">Manba → Tarjima</button>
@@ -267,7 +267,7 @@
     <div id="dashboard-screen" class="screen">
       <header><h1>📊 Mening natijalarim</h1><p>Xotira holati va statistikalar</p></header>
 
-      <div class="card">
+      <div class="card span-2">
         <div class="stat-grid">
           <div class="stat-box"><div class="num" id="statTotal">0</div><div class="lbl">Jami so'z</div></div>
           <div class="stat-box"><div class="num" id="statStarred">0</div><div class="lbl">⭐ Yodlangan</div></div>
@@ -296,7 +296,7 @@
     <div id="settings-screen" class="screen">
       <header><h1>⚙️ Sozlamalar</h1><p>Til va tizim sozlamalari</p></header>
 
-      <div class="card">
+      <div class="card span-2">
         <h2>🌐 Manba va maqsad til</h2>
         <div class="select-row">
           <select id="settingsSourceLang" onchange="saveSettings()"></select>
@@ -329,12 +329,23 @@
       </div>
 
       <div class="card">
-        <h2>🎯 Kunlik ball maqsadi</h2>
-        <p class="sub">Har kuni to'plashingiz kerak bo'lgan ball. Norma bajarilmasa, ertasiga maqsad qoldiq bilan oshadi.</p>
-        <input type="number" id="dailyGoalInput" min="10" step="10" placeholder="100" onchange="saveSettings()">
+        <div class="toggle-row">
+          <div>
+            <div class="label">🤖 AI-GL (AI yordamchi)</div>
+            <div class="hint">Yoqilsa, ballaringiz va o'rganishingiz bo'yicha AI bilan to'g'ridan-to'g'ri suhbatlashish imkoni ochiladi</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="aiglToggle" onchange="toggleAigl(this.checked)">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="aigl-panel" id="aiglPanel" style="display:none;">
+          <p class="sub" style="margin-top:12px;">AI-GL — bu yerda AI faqat sizning kunlik ballaringiz, progressingiz va o'rganish strategiyangiz bo'yicha maslahat beradi va yo'l ko'rsatadi.</p>
+          <button class="btn-primary btn-full" onclick="openAiglChat()">💬 AI-GL ga kirish</button>
+        </div>
       </div>
 
-      <div class="card">
+      <div class="card span-2">
         <h2>📅 Kunlik ballaringiz</h2>
         <p class="sub">Batafsil ma'lumot uchun kun ustiga bosing</p>
         <div class="week-strip" id="weekPointsStrip"></div>
@@ -353,7 +364,7 @@
         </div>
       </div>
 
-      <div class="card">
+      <div class="card span-2">
         <h2>🔌 Backend (AI proxy) manzili</h2>
         <p class="sub">API kaliti faqat serverda saqlanadi — bu yerda faqat server manzili</p>
         <input type="text" id="apiBaseUrlInput" placeholder="http://localhost:8787">
@@ -437,7 +448,7 @@
   <div class="chat-drawer-backdrop" id="chatDrawerBackdrop" onclick="closeChatDrawer()"></div>
   <div class="chat-drawer" id="chatDrawer">
     <div class="chat-drawer-header">
-      <h3>💬 AI bilan suhbat</h3>
+      <h3 id="chatDrawerTitle">💬 AI bilan suhbat</h3>
       <button class="btn-secondary" onclick="closeChatDrawer()">✕</button>
     </div>
     <div class="chat-drawer-messages" id="chatMessages"></div>
