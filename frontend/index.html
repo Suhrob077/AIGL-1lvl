@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>So'z O'rganish — AI Lug'at</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="floating-area" id="floatingArea"></div>
+  <div class="toast" id="toast"></div>
+
+  <div class="container">
+
+    <!-- HOME -->
+    <div id="home-screen" class="screen active">
+      <header>
+        <h1>📚 So'z O'rganish</h1>
+        <p>AI asosidagi lug'at o'rganish ilovasi</p>
+      </header>
+
+      <div class="daily-goal-banner" id="dailyGoalBanner" style="display:none;" onclick="dismissDailyGoalBanner()"></div>
+
+      <div class="card daily-goal-card">
+        <h2>🎯 Kunlik maqsad</h2>
+        <div class="daily-goal-row">
+          <span><span class="daily-goal-points">0</span> / <span class="daily-goal-target">100</span> ball</span>
+          <span class="daily-goal-pct">0%</span>
+        </div>
+        <div class="progress-bar" style="max-width:100%;"><div class="progress-fill daily-goal-fill" style="width:0%"></div></div>
+        <div class="daily-goal-status" id="dailyGoalStatus"></div>
+      </div>
+
+      <div class="card">
+        <h2>➕ So'z qo'shish</h2>
+        <div class="input-group">
+          <input type="text" id="deInput" placeholder="Manba so'z" autocomplete="off">
+          <input type="text" id="uzInput" placeholder="Tarjima" autocomplete="off">
+        </div>
+        <button class="btn-primary btn-full" onclick="addWord()">➕ Qo'shish</button>
+        <button class="btn-secondary btn-full" onclick="goToScreen('scan-screen')">📷 Rasmdan skanerlash (OCR)</button>
+      </div>
+
+      <div class="card">
+        <h2>Mening so'zlarim (<span id="wordCount">0</span>)</h2>
+        <div class="word-list" id="wordList"></div>
+        <div class="empty-msg" id="emptyMsg">Hali so'z qo'shilmagan</div>
+        <button class="btn-secondary btn-full" onclick="loadExamples()">📥 Tayyor so'zlarni yuklash</button>
+        <button class="btn-danger btn-full" onclick="clearAll()">🗑️ Hammasini o'chirish</button>
+      </div>
+
+      <div class="card">
+        <h2>Yo'nalishni tanlang</h2>
+        <div class="direction-btns">
+          <button id="dir-fwd" class="btn-secondary active" onclick="setDirection('src-tgt')">Manba → Tarjima</button>
+          <button id="dir-bwd" class="btn-secondary" onclick="setDirection('tgt-src')">Tarjima → Manba</button>
+        </div>
+        <button class="btn-primary btn-full" style="padding:16px; font-size:1.05rem;" onclick="startPractice()">🚀 Boshlash</button>
+        <p class="note">Ovozli javob uchun Chrome brauzeridan foydalaning</p>
+      </div>
+    </div>
+
+    <!-- PRACTICE -->
+    <div id="practice-screen" class="screen">
+      <div class="top-bar">
+        <button class="btn-secondary" onclick="stopPractice()">← Orqaga</button>
+        <div class="stats" id="progressText">0 / 0</div>
+        <div style="width:70px;"></div>
+      </div>
+      <div class="center-area">
+        <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div class="big-card" id="bigCard">
+          <div class="word" id="currentWord">—</div>
+          <div class="hint" id="currentHint">Tarjimasini yozing yoki ayting</div>
+        </div>
+        <div class="answer-box">
+          <div class="input-row">
+            <input type="text" id="answerInput" placeholder="Javobni yozing..." autocomplete="off">
+            <button class="mic-btn" id="micBtn" onclick="toggleVoice()" title="Ovozli kiritish">🎤</button>
+          </div>
+          <div class="mic-level"><div class="mic-level-fill" id="micLevelFill"></div></div>
+          <button class="btn-primary btn-full" onclick="checkAnswer()">Tekshirish</button>
+        </div>
+        <div class="feedback" id="feedback"></div>
+        <div class="ai-summary-box" id="practiceSummaryBox" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- SCAN / OCR -->
+    <div id="scan-screen" class="screen">
+      <header><h1>📷 Lug'atni skanerlash</h1><p>Faqat lug'at/so'z ro'yxati matni o'qiladi</p></header>
+      <div class="card">
+        <div class="select-row" style="margin-bottom:10px;">
+          <select id="scanSourceLang"></select>
+          <span>→</span>
+          <select id="scanTargetLang"></select>
+        </div>
+        <div class="scan-frame">
+          <video id="scanVideo" autoplay playsinline muted></video>
+          <img id="scanPreviewImg" alt="preview">
+          <div class="guide"></div>
+        </div>
+        <div class="scan-controls">
+          <button class="btn-primary" id="captureBtn" onclick="capturePhoto()">📸 Suratga olish</button>
+          <label class="btn-secondary upload-label" for="scanFileInput">🖼️ Rasm yuklash</label>
+        </div>
+        <input type="file" id="scanFileInput" accept="image/*" style="display:none" onchange="handleFileUpload(this)">
+        <button class="btn-primary btn-full" id="scanUploadBtn" style="display:none" onclick="submitScan()">🔎 Tahlil qilish</button>
+        <div class="status-line" id="scanStatus"></div>
+        <div class="scan-result-list" id="scanResultList"></div>
+        <button class="btn-primary btn-full" id="scanImportBtn" style="display:none">✅ Tanlanganlarni qo'shish</button>
+      </div>
+    </div>
+
+    <!-- GAME (Floating Word Bubbles + Sentence Translation) -->
+    <div id="game-screen" class="screen">
+
+      <div class="game-mode-tabs">
+        <button class="btn-secondary active" id="gameModeWords" onclick="selectGameMode('words')">🔤 So'zlar</button>
+        <button class="btn-secondary" id="gameModeSentence" onclick="selectGameMode('sentence')">📝 Gaplar</button>
+      </div>
+
+      <div id="game-words-wrap">
+
+      <!-- Game Setup Screen -->
+      <div id="game-setup" class="game-section">
+        <header style="padding: 12px 0;">
+          <h1>🎮 So'z Pufakchalari</h1>
+          <p>To'g'ri javobni suzib yurgan so'zlar orasidan toping</p>
+        </header>
+
+        <div class="card">
+          <h2>🎯 Yo'nalishni tanlang</h2>
+          <div class="direction-btns">
+            <button class="btn-secondary active" id="gameDir1" onclick="selectGameDirection('src-tgt')">Manba → Tarjima</button>
+            <button class="btn-secondary" id="gameDir2" onclick="selectGameDirection('tgt-src')">Tarjima → Manba</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>⏱️ Darajani tanlang (har bir so'z uchun vaqt)</h2>
+          <div class="direction-btns game-diff-btns">
+            <button class="btn-secondary" id="gameDiffHard" onclick="selectGameDifficulty('hard')">Qiyin<br><small>10 soniya</small></button>
+            <button class="btn-secondary active" id="gameDiffMid" onclick="selectGameDifficulty('mid')">O'rta<br><small>20 soniya</small></button>
+            <button class="btn-secondary" id="gameDiffEasy" onclick="selectGameDifficulty('easy')">Oson<br><small>30 soniya</small></button>
+          </div>
+        </div>
+
+        <div class="card" style="text-align: center;">
+          <p class="sub" style="margin-bottom:10px;">Har bir so'zga tanlangan daraja bo'yicha vaqt beriladi. Javobni bosgach (yoki vaqt tugagach), natija <b>3 soniya</b> ko'rsatiladi, so'ng darhol keyingi so'zga o'tiladi.</p>
+          <button class="btn-primary btn-full" style="padding:18px; font-size:1.1rem;" onclick="startGameMode()">🚀 O'YIN BOSHLASH</button>
+        </div>
+      </div>
+
+      <!-- Game Playing Screen -->
+      <div id="game-playing" class="game-section" style="display:none;">
+        <div class="top-bar">
+          <button class="btn-secondary" onclick="stopGame()">← Orqaga</button>
+          <div class="stats" id="gameProgressText">1 / 10</div>
+          <div style="width:70px;"></div>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" id="gameProgressFill" style="width:0%"></div></div>
+
+        <div class="game-word-timer-row">
+          <div class="game-timer" id="gameWordTimer">20</div>
+          <div class="progress-bar" style="max-width:none; margin-bottom:0; flex:1;"><div class="progress-fill" id="gameWordTimeFill" style="width:100%"></div></div>
+        </div>
+
+        <div class="big-card" id="gamePromptCard">
+          <div class="word" id="gamePromptWord">—</div>
+          <div class="hint" id="gamePromptHint">To'g'ri javobni tanlang!</div>
+        </div>
+
+        <div class="game-options-grid" id="gameOptionsGrid"></div>
+
+        <div class="game-feedback-banner" id="gameFeedbackBanner" style="margin:14px auto 0; text-align:center;"></div>
+      </div>
+
+      <!-- Game Over Screen -->
+      <div id="game-over" class="game-section" style="display:none;">
+        <div style="text-align:center; padding:30px 20px;">
+          <div style="font-size:4rem; margin-bottom:20px;">🎉</div>
+          <h2 style="margin-bottom:10px;">O'yin tugadi!</h2>
+          <div class="card" style="margin: 20px 0;">
+            <div class="stat-grid">
+              <div class="stat-box">
+                <div class="num" id="gameOverScore">0</div>
+                <div class="lbl">To'g'ri</div>
+              </div>
+              <div class="stat-box">
+                <div class="num" id="gameOverTotal">0</div>
+                <div class="lbl">Jami</div>
+              </div>
+              <div class="stat-box">
+                <div class="num" id="gameOverPercent">0%</div>
+                <div class="lbl">Foiz</div>
+              </div>
+            </div>
+            <div class="ai-summary-box" id="gameOverAiComment" style="margin-top:14px; text-align:left;"></div>
+          </div>
+          <button class="btn-primary btn-full" onclick="restartGameMode()">🔁 QAYTA BOSHLASH</button>
+          <button class="btn-secondary btn-full" onclick="stopGame()">← Bosh sahifaga</button>
+        </div>
+      </div>
+
+      </div><!-- /#game-words-wrap -->
+
+      <!-- Gaplarni tarjima qilish (sentence-order mode) -->
+      <div id="game-sentence-wrap" style="display:none;">
+
+        <div id="sentence-setup" class="game-section">
+          <header style="padding: 12px 0;">
+            <h1>📝 Gaplarni tarjima qilish</h1>
+            <p>AI sizning lug'atingizdagi so'zlardan kundalik gap tuzadi — uni to'g'ri tartibda yig'ing</p>
+          </header>
+          <div class="card">
+            <p class="sub" style="margin-bottom:10px;">AI so'zlaringizdan foydalanib qisqa, kundalik gap tuzadi va uni boshqa tilda savol qilib beradi. Siz esa gapni so'zlardan tartib bilan yig'ib, tarjimasini tuzasiz. Agar so'zlaringiz gap tuzish uchun yetarli yoki mos bo'lmasa, AI sizga shuni aytadi.</p>
+            <button class="btn-primary btn-full" style="padding:18px; font-size:1.1rem;" onclick="startSentenceMode()">🚀 BOSHLASH</button>
+          </div>
+        </div>
+
+        <div id="sentence-playing" class="game-section" style="display:none;">
+          <div class="top-bar">
+            <button class="btn-secondary" onclick="stopGame()">← Orqaga</button>
+            <div class="stats" id="sentenceProgressText">1 / 5</div>
+            <div style="width:70px;"></div>
+          </div>
+
+          <div class="card sentence-prompt-card" id="sentencePromptCard">
+            <div class="sub" style="margin-bottom:6px;">Bu gapni tarjima qiling:</div>
+            <div class="sentence-prompt-text" id="sentencePromptText">—</div>
+          </div>
+
+          <div class="card">
+            <div class="sub" style="margin-bottom:6px;">Sizning javobingiz:</div>
+            <div class="sentence-answer-slot" id="sentenceAnswerSlot"></div>
+            <div class="game-feedback-banner" id="sentenceFeedbackBanner" style="margin:10px auto 0; text-align:center;"></div>
+          </div>
+
+          <div class="card">
+            <div class="sub" style="margin-bottom:6px;">So'zlarni bosib tanlang:</div>
+            <div class="sentence-chip-pool" id="sentenceChipPool"></div>
+            <button class="btn-primary btn-full" id="sentenceCheckBtn" style="margin-top:12px;" onclick="checkSentenceAnswer()" disabled>Tekshirish</button>
+          </div>
+        </div>
+
+        <div id="sentence-over" class="game-section" style="display:none;">
+          <div style="text-align:center; padding:30px 20px;">
+            <div style="font-size:4rem; margin-bottom:20px;">🎉</div>
+            <h2 style="margin-bottom:10px;">Gaplar bosqichi tugadi!</h2>
+            <div class="card" style="margin: 20px 0;">
+              <div class="stat-grid" style="grid-template-columns: 1fr 1fr;">
+                <div class="stat-box"><div class="num" id="sentenceOverScore">0</div><div class="lbl">To'g'ri</div></div>
+                <div class="stat-box"><div class="num" id="sentenceOverTotal">0</div><div class="lbl">Jami</div></div>
+              </div>
+              <div class="ai-summary-box" id="sentenceOverAiComment" style="margin-top:14px; text-align:left;"></div>
+            </div>
+            <button class="btn-primary btn-full" onclick="restartSentenceMode()">🔁 QAYTA BOSHLASH</button>
+            <button class="btn-secondary btn-full" onclick="stopGame()">← Bosh sahifaga</button>
+          </div>
+        </div>
+
+      </div><!-- /#game-sentence-wrap -->
+    </div>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard-screen" class="screen">
+      <header><h1>📊 Mening natijalarim</h1><p>Xotira holati va statistikalar</p></header>
+
+      <div class="card">
+        <div class="stat-grid">
+          <div class="stat-box"><div class="num" id="statTotal">0</div><div class="lbl">Jami so'z</div></div>
+          <div class="stat-box"><div class="num" id="statStarred">0</div><div class="lbl">⭐ Yodlangan</div></div>
+          <div class="stat-box"><div class="num" id="statHard">0</div><div class="lbl">⚠️ Qiyin</div></div>
+        </div>
+        <div class="progress-bar" style="max-width:100%;"><div class="progress-fill" id="masteryFill" style="width:0%"></div></div>
+        <p class="sub" style="margin-top:4px;">Umumiy o'zlashtirish: <span id="masteryPct">0%</span></p>
+      </div>
+
+      <div class="card">
+        <h2>⭐ Yodlangan so'zlar</h2>
+        <p class="sub">5 marta to'g'ri topilgan so'zlar</p>
+        <table class="mini"><thead><tr><th>So'z</th><th>Tarjima</th><th>Urinish</th></tr></thead><tbody id="starredTableBody"></tbody></table>
+        <div class="empty-msg" id="starredEmpty">Hali yo'q</div>
+      </div>
+
+      <div class="card">
+        <h2>⚠️ Qiyin so'zlar</h2>
+        <p class="sub">5 marta xato javob berilgan so'zlar</p>
+        <table class="mini"><thead><tr><th>So'z</th><th>Tarjima</th><th>Urinish</th></tr></thead><tbody id="hardTableBody"></tbody></table>
+        <div class="empty-msg" id="hardEmpty">Hali yo'q</div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div id="settings-screen" class="screen">
+      <header><h1>⚙️ Sozlamalar</h1><p>Til va tizim sozlamalari</p></header>
+
+      <div class="card">
+        <h2>🌐 Manba va maqsad til</h2>
+        <div class="select-row">
+          <select id="settingsSourceLang" onchange="saveSettings()"></select>
+          <button class="swap-btn" onclick="swapLanguages()">⇄</button>
+          <select id="settingsTargetLang" onchange="saveSettings()"></select>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="toggle-row">
+          <div>
+            <div class="label">🆕 Yangiman (Auto-onboarding)</div>
+            <div class="hint">Yoqilganda, so'zlar bo'lmasa tayyor lug'at avtomatik yuklanadi</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="yangimanToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row" style="margin-top:10px; border-top:1px solid rgba(255,255,255,0.08); padding-top:14px;">
+          <div>
+            <div class="label">🇩🇪 Artikllarni qo'shish (der/die/das)</div>
+            <div class="hint">Nemis otlariga AI avtomatik to'g'ri artikl qo'shadi</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="addArticlesToggle" onchange="toggleAddArticles(this.checked)">
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🎯 Kunlik ball maqsadi</h2>
+        <p class="sub">Har kuni to'plashingiz kerak bo'lgan ball. Norma bajarilmasa, ertasiga maqsad qoldiq bilan oshadi.</p>
+        <input type="number" id="dailyGoalInput" min="10" step="10" placeholder="100" onchange="saveSettings()">
+      </div>
+
+      <div class="card">
+        <h2>📅 Kunlik ballaringiz</h2>
+        <p class="sub">Batafsil ma'lumot uchun kun ustiga bosing</p>
+        <div class="week-strip" id="weekPointsStrip"></div>
+        <button class="btn-secondary btn-full" onclick="openAllDaysModal()">🗓️ Barcha kunlar</button>
+      </div>
+
+      <div class="card">
+        <h2>🔔 Bildirishnomalar</h2>
+        <p class="sub">Kunlik normani bajarmasangiz, brauzer bildirishnomasi orqali eslatib turadi. Bosilganda sayt ochiladi.</p>
+        <button class="btn-primary btn-full" id="notifToggleBtn" onclick="enableNotifications()">🔔 Bildirishnomani yoqish</button>
+      </div>
+
+      <div class="card">
+        <div class="privacy-notice">
+          🔒 <b>Session Privacy Enabled:</b> Chat tarixi va vaqtinchalik qo'shilgan ma'lumotlar doimiy saqlanmaydi va sessiya tugagach (sahifa yangilanganda) tozalanadi. Faqat asosiy sozlamalar va so'zlar ro'yxati saqlanib qoladi.
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>🔌 Backend (AI proxy) manzili</h2>
+        <p class="sub">API kaliti faqat serverda saqlanadi — bu yerda faqat server manzili</p>
+        <input type="text" id="apiBaseUrlInput" placeholder="http://localhost:8787">
+        <button class="btn-primary btn-full" onclick="saveSettings()">Saqlash</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" data-target="home-screen"><span class="icon">🏠</span>Bosh sahifa</button>
+    <button class="nav-btn" data-target="game-screen"><span class="icon">🎮</span>O'yin</button>
+    <button class="nav-btn" data-target="scan-screen"><span class="icon">📷</span>Skaner</button>
+    <button class="nav-btn" data-target="dashboard-screen"><span class="icon">📊</span>Natijalar</button>
+    <button class="nav-btn" data-target="settings-screen"><span class="icon">⚙️</span>Sozlama</button>
+  </div>
+
+  <!-- MASTERY / GAMIFICATION MODAL -->
+  <div class="modal-backdrop" id="masteryModal">
+    <div class="modal-box">
+      <div class="emoji">🏆</div>
+      <h3>Barcha so'zlar yodlandi!</h3>
+      <p>Siz mavjud barcha so'zlarni ⭐ darajasiga yetkazdingiz. Keyingi qadamni tanlang:</p>
+      <div class="modal-actions">
+        <button class="btn-primary btn-full" onclick="masteryChoiceRestart()">🔁 Shu so'zlar bilan qayta boshlash</button>
+        <button class="btn-secondary btn-full" onclick="masteryChoiceNewSet()">📥 Yangi so'zlar to'plamini kiritish</button>
+        <button class="btn-danger btn-full" onclick="masteryChoiceFullReset()">♻️ Barcha ballarni 0 ga tiklash</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY POINTS INFO MODAL -->
+  <div class="modal-backdrop" id="dayInfoModal" onclick="if(event.target===this) closeDayInfoModal()">
+    <div class="modal-box">
+      <div class="emoji" id="dayInfoEmoji">📅</div>
+      <h3 id="dayInfoTitle">—</h3>
+      <p id="dayInfoText">—</p>
+      <div class="modal-actions">
+        <button class="btn-secondary btn-full" onclick="closeDayInfoModal()">Yopish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALL DAYS (MONTHLY) POINTS MODAL -->
+  <div class="modal-backdrop" id="allDaysModal" onclick="if(event.target===this) closeAllDaysModal()">
+    <div class="modal-box month-modal-box">
+      <div class="month-nav">
+        <button class="btn-secondary" onclick="shiftCalendarMonth(-1)">‹</button>
+        <div class="month-title" id="monthTitle">—</div>
+        <button class="btn-secondary" onclick="shiftCalendarMonth(1)">›</button>
+      </div>
+      <div class="month-grid month-weekday-row" id="monthWeekdayHeader"></div>
+      <div class="month-grid" id="monthGrid"></div>
+      <div class="modal-actions">
+        <button class="btn-secondary btn-full" onclick="closeAllDaysModal()">Yopish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI ARTICLE-FIX SUGGESTION POPUP -->
+  <div class="ai-suggest-toast" id="aiSuggestToast">
+    <div class="title">🤖 AI so'zni to'g'riladi</div>
+    <div class="msg" id="aiSuggestMsg"></div>
+    <div class="row">
+      <button class="btn-secondary" onclick="dismissAiSuggestion()">O'tkazib yuborish</button>
+      <button class="btn-primary" onclick="openChatAboutSuggestion()">💬 Chat</button>
+    </div>
+  </div>
+
+  <!-- AI ANSWER-FEEDBACK POPUP (practice screen) -->
+  <div class="ai-suggest-toast" id="aiAnswerToast">
+    <div class="title">🤖 AI fikri</div>
+    <div class="msg" id="aiAnswerMsg"></div>
+    <div class="row">
+      <button class="btn-secondary" onclick="dismissAiAnswerComment()">O'tkazib yuborish</button>
+      <button class="btn-primary" onclick="openChatAboutAnswer()">💬 Javob berish</button>
+    </div>
+  </div>
+
+  <!-- CHAT DRAWER -->
+  <div class="chat-drawer-backdrop" id="chatDrawerBackdrop" onclick="closeChatDrawer()"></div>
+  <div class="chat-drawer" id="chatDrawer">
+    <div class="chat-drawer-header">
+      <h3>💬 AI bilan suhbat</h3>
+      <button class="btn-secondary" onclick="closeChatDrawer()">✕</button>
+    </div>
+    <div class="chat-drawer-messages" id="chatMessages"></div>
+    <div class="chat-drawer-input">
+      <input type="text" id="chatInput" placeholder="Xabar yozing..." autocomplete="off">
+      <button class="btn-primary" onclick="sendChatMessage()">➤</button>
+    </div>
+  </div>
+
+  <script src="js/state.js"></script>
+  <script src="js/points.js"></script>
+  <script src="js/pointsCalendar.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="data/seed-words.js"></script>
+  <script src="js/onboarding.js"></script>
+  <script src="js/speech.js"></script>
+  <script src="js/camera.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/gamification.js"></script>
+  <script src="js/articles.js"></script>
+  <script src="js/aiChat.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/sentence.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
